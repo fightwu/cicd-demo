@@ -1,0 +1,37 @@
+kind: pipeline
+type: docker
+name: cicd-demo
+workspace:
+  base: /data/service
+  path: .
+steps:
+  - name: 部署cicd-demo项目
+    image: appleboy/drone-ssh
+    settings:
+      host:
+        from_secret: host #SETTINGS中配置的host，port，username，rsa配置在这里，也可以写死
+      port:
+        from_secret: port
+      username:
+        from_secret: username
+      password:
+        from_secret: rsa
+      target:
+        from_secret: /var/www/myapp/  #项目部署目录，也可以配置在SETTINGS中
+      source: ./*
+      volumes:
+        - name: webroot
+          host:
+            path: /opt
+        - name: cache
+          host:
+            path: /tmp/cache
+      script:  #构建脚本，上传代码会自动执行
+        - cd /usr/local/backend/cicd-demo/ #项目jar包文件夹
+        - pwd && ls -l
+        - rm -rf dist/*
+        - pwd && ls -l
+        - docker build -t biz-rbac-service:0.0.1 .
+        - docker rm -f biz-rbac-service || true
+        - docker run -d --name biz-rbac-service -p 8002:8002 biz-rbac-service:0.0.1 #运行容器，p 8002:8002，前一个端口是部署服务地址端口，后面的是项目后端的端口
+        - echo "endx"
